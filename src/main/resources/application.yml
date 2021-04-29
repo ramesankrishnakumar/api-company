@@ -1,0 +1,18 @@
+spring:
+ application:
+   name: api-company
+ cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        instanceId: ${spring.application.name}:${random.value}
+        serviceName: ${spring.application.name}
+        healthCheckPath: /health
+        healthCheckInterval: 60s
+server:
+  port: 8091
+    
+    
+    
+    
