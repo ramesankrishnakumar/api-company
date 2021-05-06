@@ -1,7 +1,7 @@
 spring:
- application:
-   name: api-company
- cloud:
+  application:
+    name: api-company
+  cloud:
     consul:
       host: localhost
       port: 8500
@@ -9,10 +9,16 @@ spring:
         instanceId: ${spring.application.name}:${random.value}
         serviceName: ${spring.application.name}
         healthCheckPath: /health
-        healthCheckInterval: 60s
+        prefer-ip-address: true
+        healthCheckInterval: 10s
+        health-check-timeout: 50s
 server:
-  port: 8091
-    
-    
-    
-    
+  port: 8090
+  
+logging:
+  level:
+    org:
+      springframework:
+        web:
+          client:
+            RestTemplate: DEBUG

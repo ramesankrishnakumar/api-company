@@ -30,9 +30,10 @@ public class CompanyInfoController {
 		info.setCompanyName("TriNet PEO");
 		Map<String, String> urlParams = new HashMap<>();
 		urlParams.put("companyId", companyId);
-		java.net.URI uri = UriComponentsBuilder.fromUriString("http://api-employee/v1/company/{companyId}/employee-detail")
+		java.net.URI uri = UriComponentsBuilder.fromUriString("http://api-employee/v1/company/{companyId}/employee-details")
 								.buildAndExpand(companyId)
 								.toUri();
+		System.out.println(uri.toString());
 		Employee employee = restTemplate.getForEntity(uri, Employee.class).getBody();
 		info.setEmployee(employee);
 		return ResponseEntity.ok(info);

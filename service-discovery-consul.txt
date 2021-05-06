@@ -1,0 +1,44 @@
+
+docker network create consul-net -d overlay
+docker network create consul-net -d overlay
+docker network create -d overlay --attachable backend
+
+
+docker service create --name consul-seed \
+  -p 8301:8300 \
+  -p 8500:8500 \
+  --network consul-net \
+  -e 'CONSUL_BIND_INTERFACE=eth0' \
+  consul agent -server -ui -bootstrap-expect=3 -log-level=debug -disable-host-node-id -client 0.0.0.0 -retry-join=consul-seed:8301 -retry-join=consul-cluster:8300
+
+
+docker service create --name consul-cluster \
+  -p 8300:8300 \
+  --network consul-net \
+  --replicas 2 \
+  -e 'CONSUL_BIND_INTERFACE=eth0' \
+  consul agent -server -retry-join=consul-seed:8301 -log-level=debug -disable-host-node-id -client 0.0.0.0 -retry-join=consul-cluster:8300
+
+
+docker service create --name consul-agents \
+  --network consul-net \
+  --replicas 3 \
+  -e 'CONSUL_BIND_INTERFACE=eth0' \
+  consul agent -disable-host-node-id -retry-join=consul-seed:8301 -log-level=debug -client 0.0.0.0 -retry-join=consul-cluster:8300
+
+docker service create --name api-employee --replicas 3 \
+--network consul-net -e spring.cloud.consul.host=consul-agents \
+sysout1kk/api-employee
+
+docker service create --name api-company \
+-p 8080:8090 --network consul-net  \
+-e spring.cloud.consul.host=consul-agents \
+-e spring.cloud.consul.discovery.health-check-timeout=100s \
+-e logging.level.org.springframework.web.client.RestTemplate=DEBUG \
+-e logging.level.org.springframework.cloud=DEBUG \
+sysout1kk/api-company
+
+
+docker service update --force --update-parallelism 1  --replicas 3 api-company
+
+docker service update --force --update-parallelism 1 --update-delay 30s
