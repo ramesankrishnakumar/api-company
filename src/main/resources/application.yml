@@ -1,3 +1,5 @@
+server:
+  port: 8090
 spring:
   application:
     name: api-company
@@ -6,17 +8,7 @@ spring:
       host: localhost
       port: 8500
       discovery:
-        instanceId: ${spring.application.name}:${random.value}
-        serviceName: ${spring.application.name}
-        healthCheckPath: /health
-        healthCheckInterval: 10s
-server:
-  port: 8090
-  
-logging:
-  level:
-    org:
-      springframework:
-        web:
-          client:
-            RestTemplate: DEBUG
+        instance-id: ${spring.application.name}:${random.value}
+        health-check-path: /health
+        service-name: ${spring.application.name}
+        health-check-interval: 10s

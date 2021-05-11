@@ -3,24 +3,22 @@ services:
   consul-seed:
     image: consul:latest
     ports:
-      - "8301:8300"
+      - "8300:8300"
       - "8500:8500"
     environment:
       CONSUL_BIND_INTERFACE: eth0
-    command: "agent -server -ui -bootstrap-expect=3 -log-level=debug -disable-host-node-id -client=0.0.0.0 -retry-join=consul-cluster:8300 -retry-join=consul-seed:8301"
+    command: "agent -server -ui -bootstrap-expect=3 -disable-host-node-id -client=0.0.0.0 -retry-join=consul-cluster -retry-join=consul-seed"
     deploy:
       placement:
         constraints: [node.role == manager]
 
   consul-cluster:
     image: consul:latest
-    ports:
-      - "8300:8300"
     environment:
       CONSUL_BIND_INTERFACE: eth0
     depends_on:
       - consul-seed
-    command: "agent -server -bootstrap-expect=3 -log-level=debug -disable-host-node-id -client=0.0.0.0  -retry-join=consul-seed:8301 -retry-join=consul-cluster:8300"
+    command: "agent -server -ui -disable-host-node-id -client=0.0.0.0 -retry-join=consul-seed -retry-join=consul-cluster"
     deploy:
       replicas: 2
 
@@ -28,14 +26,16 @@ services:
     image: consul:latest
     environment:
       CONSUL_BIND_INTERFACE: eth0
-    command: "agent -disable-host-node-id -log-level=debug -client=0.0.0.0 -retry-join=consul-cluster:8300 -retry-join=consul-seed:8301"
+    command: "agent -disable-host-node-id -retry-join=consul-seed -client=0.0.0.0 -retry-join=consul-cluster"
     depends_on:
       - consul-seed
     deploy:
-      replicas: 6
+      replicas: 3
 
   api-employee:
     image: sysout1kk/api-employee
+    ports:
+      - "8081:8091"
     environment:
       - spring.cloud.consul.host=consul-agents
     depends_on:
@@ -59,13 +59,13 @@ services:
   haproxy:
     image: sysout1kk/haproxy
     ports:
-      - "8020:80"
-      - "1936:1936"
+      - "80:80"
     depends_on:
       - api-employee
       - api-company
     deploy:
       replicas: 2
+
 networks:
   default:
     external:

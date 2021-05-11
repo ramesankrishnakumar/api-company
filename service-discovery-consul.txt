@@ -1,45 +1,44 @@
-
-docker network create backend -d overlay
-docker network create backend -d overlay
 docker network create -d overlay --attachable backend
 
 
 docker service create --name consul-seed \
-  -p 8301:8300 \
-  -p 8500:8500 \
-  -p 8600:8600 \
-  --network backend \
-  -e 'CONSUL_BIND_INTERFACE=eth0' \
-  consul agent -server -ui -bootstrap-expect=3 -disable-host-node-id -client 0.0.0.0 -retry-join=consul-cluster
-
+-p 8300:8300 \
+-p 8500:8500 \
+-p 8600:8600 \
+--network backend \
+-e 'CONSUL_BIND_INTERFACE=eth0' \
+consul agent -server -ui -bootstrap-expect=3 -disable-host-node-id -client 0.0.0.0 -retry-join=consul-cluster
 
 docker service create --name consul-cluster \
-  --network backend \
-  --replicas 2 \
-  -e 'CONSUL_BIND_INTERFACE=eth0' \
-  consul agent -server -log-level=debug -disable-host-node-id -client 0.0.0.0 -retry-join=consul-seed
-
+--network backend \
+--replicas 2 \
+-e 'CONSUL_BIND_INTERFACE=eth0' \
+consul agent -server -ui -disable-host-node-id -client 0.0.0.0 -retry-join=consul-seed
 
 docker service create --name consul-agents \
-  --network backend \
-  --replicas 3 \
-  -e 'CONSUL_BIND_INTERFACE=eth0' \
-  consul agent -disable-host-node-id -log-level=debug -client 0.0.0.0 -retry-join=consul-seed
+--network backend \
+--replicas 3 \
+-e 'CONSUL_BIND_INTERFACE=eth0' \
+consul agent -disable-host-node-id -client 0.0.0.0 -retry-join=consul-seed
 
-docker service create --name api-employee --replicas 3 \
+docker service create --name api-employee \
+-p 8081:8091 \
+--replicas 3 \
 --network backend -e spring.cloud.consul.host=consul-agents \
+-e management.endpoints.web.exposure.include=* \
 sysout1kk/api-employee
 
 docker service create --name api-company \
 -p 8080:8090 --network backend  \
 --replicas 3 \
 -e spring.cloud.consul.host=consul-agents \
+-e management.endpoints.web.exposure.include=* \
 -e logging.level.org.springframework.web.client.RestTemplate=DEBUG \
 -e logging.level.org.springframework.cloud.consul=DEBUG \
 sysout1kk/api-company
 
 docker service create --name haproxy \
--p 1936:1936 -p 8020:80 --network backend \
+-p 80:80 --network backend \
 --replicas 2 sysout1kk/haproxy
 
 
