@@ -1,0 +1,78 @@
+version: '3.3'
+services:
+  consul-master:
+    image: consul:latest
+    container_name: "consul-master"
+    hostname: "consul-master"
+    ports:
+      - "8500:8500"
+    environment:
+      CONSUL_BIND_INTERFACE: eth0
+    command: "agent -server -ui -bootstrap-expect=3 -disable-host-node-id -client=0.0.0.0"
+
+  consul-p1:
+    image: consul:latest
+    container_name: "consul-p1"
+    hostname: "consul-p1"
+    environment:
+      CONSUL_BIND_INTERFACE: eth0
+    command: "agent -server -ui -bootstrap-expect=3 -disable-host-node-id -client=0.0.0.0 -retry-join=consul-master -retry-join=consul-p2"
+    depends_on:
+      - consul-master
+
+  consul-p2:
+    image: consul:latest
+    container_name: "consul-p2"
+    hostname: "consul-p2"
+    environment:
+      CONSUL_BIND_INTERFACE: eth0
+    command: "agent -server -ui -bootstrap-expect=3 -disable-host-node-id -client=0.0.0.0 -retry-join=consul-master -retry-join=consul-p1"
+    depends_on:
+      - consul-master
+  
+  consul-agents:
+    image: consul:latest
+    container_name: "consul-agents"
+    hostname: "consul-agents"
+    environment:
+      CONSUL_BIND_INTERFACE: eth0
+    command: "agent -disable-host-node-id -retry-join=consul-master -client=0.0.0.0 "
+    depends_on:
+      - consul-master
+
+  api-employee:
+    image: sysout1kk/api-employee
+    environment:
+      - spring.cloud.consul.host=consul-agents
+      - spring.cloud.consul.discovery.preferIpAddress=true
+      - management.endpoints.web.exposure.include=*
+      - server.port=0
+    depends_on:
+      - consul-agents
+
+  api-company:
+    image: sysout1kk/api-company
+    environment:
+      - spring.cloud.consul.host=consul-agents
+      - management.endpoints.web.exposure.include=*
+      - spring.cloud.consul.discovery.preferIpAddress=true
+      - server.port=0
+    depends_on:
+      - consul-agents
+
+  haproxy:
+    image: sysout1kk/haproxy
+    container_name: "haproxy"
+    hostname: "haproxy"
+    ports:
+      - "80:80"
+    depends_on:
+      - api-employee
+      - api-company
+
+  tools:
+    image: jonlabelle/network-tools
+    container_name: "tools"
+    hostname: "tools"
+    command: "ping www.google.com"
+
